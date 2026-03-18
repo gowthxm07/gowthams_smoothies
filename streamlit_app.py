@@ -1,15 +1,13 @@
 # Import python packages
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col
 
 # App Title & Description
 st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
-
-# Get Snowflake Session
-session = get_active_session()
-
+# New way to connect for SniS
+cnx = st.connection("snowflake")
+session = cnx.session()
 # Get fruit options table
 my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
 
