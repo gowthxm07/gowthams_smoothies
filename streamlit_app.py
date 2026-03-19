@@ -11,11 +11,13 @@ st.write("Choose the fruits you want in your custom Smoothie!")
 cnx = st.connection("snowflake")
 session = cnx.session()
 
-# Get fruit options table
-my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
+# Get fruit options table (NOW FETCH 2 COLUMNS)
+my_dataframe = session.table("smoothies.public.fruit_options") \
+    .select(col("FRUIT_NAME"), col("SEARCH_ON")) \
+    .to_pandas()
 
-# Convert Snowpark dataframe → Python list
-fruit_list = my_dataframe.to_pandas()["FRUIT_NAME"].tolist()
+# Convert dataframe → list for multiselect
+fruit_list = my_dataframe["FRUIT_NAME"].tolist()
 
 # Customer Name Input
 name_on_order = st.text_input("Name on Smoothie Order")
@@ -36,20 +38,27 @@ if ingredients_list:
 
         ingredients_string += fruit_chosen + ' '
 
-        # -------- NEW DYNAMIC API SECTION --------
-        st.subheader(fruit_chosen + " Nutrition Information")
+        # 1. Lookup SEARCH_ON value
+        search_on = my_dataframe.loc[
+            my_dataframe['FRUIT_NAME'] == fruit_chosen,
+            'SEARCH_ON'
+        ].iloc[0]
 
+        st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
+
+        st.subheader(fruit_chosen + ' Nutrition Information')
+
+        # 2. API Call using SEARCH_ON
         smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen}"
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
         )
 
         st.dataframe(
             data=smoothiefroot_response.json(),
             use_container_width=True
         )
-        # ----------------------------------------
 
-    # Build SQL Insert Statement (AFTER LOOP)
+    # INSERT STATEMENT AFTER LOOP
     my_insert_stmt = """ insert into smoothies.public.orders
             (name_on_order, ingredients)
             values ('""" + name_on_order + """','""" + ingredients_string + """')"""
