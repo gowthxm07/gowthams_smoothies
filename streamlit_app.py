@@ -34,25 +34,17 @@ if ingredients_list:
 
         ingredients_string += fruit_chosen + ' '
 
-        # ⭐ BUILD API SEARCH VALUE MANUALLY
-        search_on = fruit_chosen.lower().rstrip('s')
-
-        st.write("Search value for", fruit_chosen, "is", search_on)
-
         st.subheader(fruit_chosen + " Nutrition Information")
 
-        try:
-            smoothiefroot_response = requests.get(
-                f"https://my.smoothiefroot.com/api/fruit/{search_on}"
-            )
+        # ⭐ USING fruit_chosen VARIABLE DIRECTLY
+        smoothiefroot_response = requests.get(
+            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen}"
+        )
 
-            st.dataframe(
-                smoothiefroot_response.json(),
-                use_container_width=True
-            )
-
-        except:
-            st.error("API Error")
+        st.dataframe(
+            smoothiefroot_response.json(),
+            use_container_width=True
+        )
 
     # Insert
     my_insert_stmt = """ insert into smoothies.public.orders
