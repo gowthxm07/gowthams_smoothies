@@ -1,7 +1,7 @@
 # Import python packages
 import streamlit as st
 from snowflake.snowpark.functions import col
-import requests   # ← NEW IMPORT
+import requests
 
 # App Title & Description
 st.title(":cup_with_straw: My Parents' healthy Dinner :cup_with_straw:")
@@ -20,22 +20,36 @@ fruit_list = my_dataframe.to_pandas()["FRUIT_NAME"].tolist()
 # Customer Name Input
 name_on_order = st.text_input("Name on Smoothie Order")
 
-# Multi-Select Widget (FINAL BADGE VERSION)
+# Multi-Select Widget
 ingredients_list = st.multiselect(
     'Choose up to 5 ingredients:',
     fruit_list,
     max_selections=5
 )
 
-# Logic block
+# ================= LOGIC BLOCK =================
 if ingredients_list:
 
     ingredients_string = ''
 
     for fruit_chosen in ingredients_list:
+
         ingredients_string += fruit_chosen + ' '
 
-    # Build SQL Insert Statement (includes name now)
+        # -------- NEW DYNAMIC API SECTION --------
+        st.subheader(fruit_chosen + " Nutrition Information")
+
+        smoothiefroot_response = requests.get(
+            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen}"
+        )
+
+        st.dataframe(
+            data=smoothiefroot_response.json(),
+            use_container_width=True
+        )
+        # ----------------------------------------
+
+    # Build SQL Insert Statement (AFTER LOOP)
     my_insert_stmt = """ insert into smoothies.public.orders
             (name_on_order, ingredients)
             values ('""" + name_on_order + """','""" + ingredients_string + """')"""
@@ -46,21 +60,3 @@ if ingredients_list:
     if time_to_insert:
         session.sql(my_insert_stmt).collect()
         st.success('Your Smoothie is ordered!', icon="✅")
-
-
-# ================================
-# NEW API PART (ADD AT BOTTOM)
-# ================================
-
-st.subheader("Watermelon Fruit Nutrition Information 🍉")
-
-# 1. The Request: Calling the API
-smoothiefroot_response = requests.get(
-    "https://my.smoothiefroot.com/api/fruit/watermelon"
-)
-
-# 2. The Digestion: Convert response → JSON → Display
-fv_df = st.dataframe(
-    data=smoothiefroot_response.json(),
-    use_container_width=True
-)
