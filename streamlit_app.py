@@ -1,13 +1,16 @@
 # Import python packages
 import streamlit as st
 from snowflake.snowpark.functions import col
+import requests   # ← NEW IMPORT
 
 # App Title & Description
 st.title(":cup_with_straw: My Parents' healthy Dinner :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
+
 # New way to connect for SniS
 cnx = st.connection("snowflake")
 session = cnx.session()
+
 # Get fruit options table
 my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
 
@@ -43,3 +46,21 @@ if ingredients_list:
     if time_to_insert:
         session.sql(my_insert_stmt).collect()
         st.success('Your Smoothie is ordered!', icon="✅")
+
+
+# ================================
+# NEW API PART (ADD AT BOTTOM)
+# ================================
+
+st.subheader("Watermelon Fruit Nutrition Information 🍉")
+
+# 1. The Request: Calling the API
+smoothiefroot_response = requests.get(
+    "https://my.smoothiefroot.com/api/fruit/watermelon"
+)
+
+# 2. The Digestion: Convert response → JSON → Display
+fv_df = st.dataframe(
+    data=smoothiefroot_response.json(),
+    use_container_width=True
+)
