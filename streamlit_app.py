@@ -2,6 +2,7 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
 import requests
+import pandas as pd   # ⭐ NEW IMPORT
 
 # Title
 st.title(":cup_with_straw: My Parents' healthy Dinner :cup_with_straw:")
@@ -11,10 +12,15 @@ st.write("Choose the fruits you want in your custom Smoothie!")
 cnx = st.connection("snowflake")
 session = cnx.session()
 
-# Fetch fruit names
-my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
+# ⭐ FETCH BOTH COLUMNS
+snow_df = session.table("smoothies.public.fruit_options") \
+    .select(col("FRUIT_NAME"), col("SEARCH_ON"))
 
-fruit_list = my_dataframe.to_pandas()["FRUIT_NAME"].tolist()
+# ⭐ CONVERT TO PANDAS
+pd_df = snow_df.to_pandas()
+
+# Fruit list for multiselect
+fruit_list = pd_df["FRUIT_NAME"].tolist()
 
 # Input
 name_on_order = st.text_input("Name on Smoothie Order")
@@ -34,11 +40,18 @@ if ingredients_list:
 
         ingredients_string += fruit_chosen + ' '
 
+        # ⭐ LOOKUP SEARCH_ON VALUE (VERY IMPORTANT BADGE LINE)
+        search_on = pd_df.loc[
+            pd_df['FRUIT_NAME'] == fruit_chosen,
+            'SEARCH_ON'
+        ].iloc[0]
+
+        st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
+
         st.subheader(fruit_chosen + " Nutrition Information")
 
-        # ⭐ USING fruit_chosen VARIABLE DIRECTLY
         smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen}"
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
         )
 
         st.dataframe(
